@@ -57,23 +57,180 @@ sudo dd if=disk4_backup.img of=/dev/rdisk5 bs=1m status=progress
 
 ## Available Scripts
 
-### 1. `create_disk_image.sh` - Compressed Image (Default Compression)
+### Image Creation Scripts
+
+#### 1. `create_disk_image.sh` - Compressed Image (Default Compression)
 Creates a compressed disk image using gzip's default compression level (6).
 - **Pros**: Best compression ratio, saves maximum space
 - **Cons**: Slowest option (2-6 hours for 1TB)
 - **Use when**: You have limited storage space and time is not critical
 
-### 2. `create_disk_image_fast.sh` - Compressed Image (Fast Compression)
+**How to run:**
+```bash
+./create_disk_image.sh
+```
+
+**What it asks:**
+```
+Continue? (y/n): y
+Password: [your sudo password]
+```
+
+#### 2. `create_disk_image_fast.sh` - Compressed Image (Fast Compression)
 Creates a compressed disk image using gzip's fastest compression level (1).
 - **Pros**: Faster than default compression, still saves significant space
 - **Cons**: Larger file than maximum compression (1-3 hours for 1TB)
 - **Use when**: You want a balance between speed and space savings
 
-### 3. `create_disk_image_raw.sh` - Raw Image (No Compression)
+**How to run:**
+```bash
+./create_disk_image_fast.sh
+```
+
+**What it asks:**
+```
+Continue? (y/n): y
+Password: [your sudo password]
+```
+
+#### 3. `create_disk_image_raw.sh` - Raw Image (No Compression)
 Creates an uncompressed, bit-for-bit copy of the disk.
 - **Pros**: Fastest option, exact sector-by-sector copy
 - **Cons**: Requires full disk size in free space (1TB for 1TB disk)
 - **Use when**: You have sufficient storage space and want maximum speed
+
+**How to run:**
+```bash
+./create_disk_image_raw.sh
+```
+
+**What it asks:**
+```
+Continue anyway? (y/n): y
+Password: [your sudo password]
+```
+
+### Restore and Clone Scripts
+
+#### 4. `direct_clone_to_2tb.sh` - Direct Clone to 2TB USB
+Directly clones from 1TB SD card to 2TB USB without creating an intermediate image file.
+- **Pros**: Fastest method (2-3 hours), no storage space needed
+- **Cons**: Both disks must be connected simultaneously
+- **Use when**: You have both source and target disks connected
+
+**How to run:**
+```bash
+./direct_clone_to_2tb.sh
+```
+
+**What it asks:**
+```
+Continue? (y/n): y
+Password: [your sudo password]
+```
+
+**Sample output:**
+```
+=== Direct Disk Clone: 1TB to 2TB ===
+
+Source: /dev/disk4 (1TB SD Card with Linux filesystem)
+Target: /dev/disk5 (2TB USB - currently FAT32)
+
+⚠️  WARNING: This operation will:
+   • COMPLETELY ERASE the 2TB USB disk (/dev/disk5)
+   • Copy all 1TB from the SD card to the USB
+   • Take approximately 2-3 hours to complete
+
+Continue? (y/n): y
+
+Step 1: Unmounting target disk...
+Step 2: Starting direct clone...
+953869+0 records in
+953869+0 records out
+1000204886016 bytes transferred in 7234.123456 secs (138234567 bytes/sec)
+
+✅ Clone completed successfully!
+Duration: 120 minutes
+```
+
+#### 5. `restore_or_clone.sh` - Interactive Restore/Clone Tool
+Provides an interactive menu to either restore from an existing image or clone directly between disks.
+- **Pros**: Flexible, detects existing image files, provides multiple options
+- **Cons**: Requires user interaction to choose options
+- **Use when**: You want to choose between different restore methods
+
+**How to run:**
+```bash
+./restore_or_clone.sh
+```
+
+**What it asks:**
+```
+Choose an option:
+  1) Direct clone from /dev/disk4 to /dev/disk5 (fastest, no intermediate storage)
+  2) Restore from existing image file [only shown if image exists]
+  q) Quit
+
+Enter your choice: 1
+
+Are you absolutely sure? Type 'yes' to continue: yes
+Password: [your sudo password]
+```
+
+**Sample interaction for direct clone:**
+```bash
+$ ./restore_or_clone.sh
+
+=== USB Disk Restore/Clone Tool ===
+
+Current disk configuration:
+  Source: /dev/disk4 (1TB SD Card)
+  Target: /dev/disk5 (2TB USB)
+
+Found compressed image: disk4_backup.img.gz (423GB)
+
+Choose an option:
+  1) Direct clone from /dev/disk4 to /dev/disk5 (fastest, no intermediate storage)
+  2) Restore from existing image file
+  q) Quit
+
+Enter your choice: 1
+
+DIRECT DISK CLONE
+=================
+WARNING: This will COMPLETELY ERASE /dev/disk5!
+
+Are you absolutely sure? Type 'yes' to continue: yes
+
+Unmounting target disk...
+Starting direct disk clone...
+[Progress bar shows here]
+
+Disk clone completed successfully!
+```
+
+**Sample interaction for image restore:**
+```bash
+$ ./restore_or_clone.sh
+
+Choose an option:
+  2) Restore from existing image file
+
+Enter your choice: 2
+
+RESTORE FROM IMAGE
+==================
+Using compressed image: disk4_backup.img.gz
+
+WARNING: This will COMPLETELY ERASE /dev/disk5!
+
+Are you absolutely sure? Type 'yes' to continue: yes
+
+Starting image restoration...
+[Progress bar shows here]
+
+Image restoration completed successfully!
+```
 
 ## Command Line Examples
 
