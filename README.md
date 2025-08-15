@@ -2,6 +2,59 @@
 
 This directory contains scripts for creating disk images from storage devices, particularly for backing up and cloning USB drives and SD cards.
 
+## Quick Start
+
+### Step 1: Identify Your Disk
+```bash
+# List all disks to find your USB/SD card
+diskutil list
+
+# Look for your device (e.g., /dev/disk4 for SD card, /dev/disk5 for USB)
+# Note the disk identifier for the next steps
+```
+
+### Step 2: Choose and Run a Script
+
+#### Option A: Maximum Compression (Slowest, Smallest File)
+```bash
+# Clone the repository
+git clone https://github.com/randomtask2000/usbcopy.git
+cd usbcopy
+
+# Run the default compression script
+./create_disk_image.sh
+```
+
+#### Option B: Fast Compression (Balanced Speed/Size)
+```bash
+# Navigate to the repository
+cd usbcopy
+
+# Run the fast compression script
+./create_disk_image_fast.sh
+```
+
+#### Option C: Raw Image (Fastest, Largest File)
+```bash
+# Navigate to the repository
+cd usbcopy
+
+# Run the raw image script (requires full disk size in free space)
+./create_disk_image_raw.sh
+```
+
+### Step 3: Restore to New Disk
+```bash
+# First, identify the target disk
+diskutil list
+
+# For compressed images:
+gunzip -c disk4_backup.img.gz | sudo dd of=/dev/rdisk5 bs=1m status=progress
+
+# For raw images:
+sudo dd if=disk4_backup.img of=/dev/rdisk5 bs=1m status=progress
+```
+
 ## Available Scripts
 
 ### 1. `create_disk_image.sh` - Compressed Image (Default Compression)
@@ -21,6 +74,106 @@ Creates an uncompressed, bit-for-bit copy of the disk.
 - **Pros**: Fastest option, exact sector-by-sector copy
 - **Cons**: Requires full disk size in free space (1TB for 1TB disk)
 - **Use when**: You have sufficient storage space and want maximum speed
+
+## Command Line Examples
+
+### Complete Workflow Example
+```bash
+# 1. Clone the repository
+git clone https://github.com/randomtask2000/usbcopy.git
+cd usbcopy
+
+# 2. Check your current disk setup
+diskutil list
+
+# 3. Verify available space
+df -h
+
+# 4. Unmount the source disk (if mounted)
+diskutil unmountDisk /dev/disk4
+
+# 5. Create the image (choose one):
+./create_disk_image_fast.sh    # Recommended for most users
+
+# 6. After swapping the SSD, identify the new disk
+diskutil list
+
+# 7. Unmount the target disk
+diskutil unmountDisk /dev/disk5
+
+# 8. Restore the image
+gunzip -c disk4_backup.img.gz | sudo dd of=/dev/rdisk5 bs=1m status=progress
+
+# 9. Verify the restoration
+diskutil list
+```
+
+### Direct Terminal Commands (Without Scripts)
+
+#### Create Images
+```bash
+# Compressed image (saves space)
+sudo dd if=/dev/rdisk4 bs=1m status=progress | gzip -1 > backup.img.gz
+
+# Maximum compression (smallest file)
+sudo dd if=/dev/rdisk4 bs=1m status=progress | gzip -9 > backup.img.gz
+
+# Raw image (fastest, needs full disk space)
+sudo dd if=/dev/rdisk4 of=backup.img bs=1m status=progress
+```
+
+#### Restore Images
+```bash
+# From compressed image
+gunzip -c backup.img.gz | sudo dd of=/dev/rdisk5 bs=1m status=progress
+
+# From raw image
+sudo dd if=backup.img of=/dev/rdisk5 bs=1m status=progress
+```
+
+#### Monitor Progress (in another terminal)
+```bash
+# Check how much has been written
+sudo killall -INFO dd
+
+# Watch file size grow
+watch -n 5 'ls -lh *.img*'
+
+# Check disk activity
+iostat -w 5
+```
+
+### Advanced Examples
+
+#### Clone Directly Between Two Disks (No Intermediate File)
+```bash
+# When you have both disks connected
+sudo dd if=/dev/rdisk4 of=/dev/rdisk5 bs=1m status=progress
+```
+
+#### Create Image to External Drive
+```bash
+# To save space on main drive
+sudo dd if=/dev/rdisk4 bs=1m status=progress | gzip > /Volumes/ExternalDrive/backup.img.gz
+```
+
+#### Verify Image Integrity
+```bash
+# Create checksums
+sudo dd if=/dev/rdisk4 bs=1m | tee backup.img | md5 > backup.md5
+# Later verify
+md5 backup.img
+cat backup.md5
+```
+
+#### Resume Interrupted Transfer
+```bash
+# Check how much was copied
+ls -la backup.img
+
+# Resume from that point (example: resume at 10GB)
+sudo dd if=/dev/rdisk4 of=backup.img bs=1m seek=10240 skip=10240 status=progress
+```
 
 ## How the Code Works
 
